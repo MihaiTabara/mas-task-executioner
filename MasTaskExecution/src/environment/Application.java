@@ -1,11 +1,20 @@
 package environment;
 
+import jade.core.Profile;
+import jade.core.Runtime;
+import jade.core.ProfileImpl;
+import jade.util.ExtendedProperties;
+import jade.util.leap.Properties;
+import jade.wrapper.AgentContainer;
+import jade.wrapper.AgentController;
+import jade.wrapper.StaleProxyException;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
+
+import agents.FacilitatorAgent;
 
 
 /**
@@ -31,8 +40,10 @@ public class Application {
 	 * 			- if input file not found
 	 * @throws IOException
 	 * 			- if input file is corrupted
+	 * @throws StaleProxyException
+	 * 			- for an attempt to use an wrapper object
 	 */
-	public static void main(String[] args) throws FileNotFoundException, IOException
+	public static void main(String[] args) throws FileNotFoundException, IOException, StaleProxyException
 	{
 		MasTaskEnvironment env = null;
 		try (InputStream input = new FileInputStream(SI))
@@ -40,7 +51,20 @@ public class Application {
 			env = new MasTaskEnvironment(input);
 		}
 		
-		System.out.println(env.toString());
+		//System.out.println(env.toString());
+		
+        Properties properties = new ExtendedProperties();
+        properties.setProperty(Profile.GUI, "false");
+        properties.setProperty(Profile.MAIN, "true");
+        properties.setProperty(Profile.CONTAINER_NAME, "MasTaskContainer");
+        ProfileImpl profile = new ProfileImpl((jade.util.leap.Properties) properties);
+        AgentContainer agentMainContainer = Runtime.instance().createMainContainer(profile);
+        
+        MasTaskEnvironment[] toSend = new MasTaskEnvironment[1];
+        toSend[0] = env;
+        
+        AgentController facilitatorControllerAgent = agentMainContainer.createNewAgent("facilitator", FacilitatorAgent.class.getName(), toSend);
+        facilitatorControllerAgent.start();
 	}
 
 }

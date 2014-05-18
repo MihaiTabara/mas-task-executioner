@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 
@@ -66,6 +67,10 @@ public class MasTaskEnvironment {
 
 		public Map<Integer, Integer> getCaps() {
 			return caps;
+		}
+		
+		public Set<Integer> getCapabilities() {
+			return caps.keySet();
 		}
 
 		@Override
