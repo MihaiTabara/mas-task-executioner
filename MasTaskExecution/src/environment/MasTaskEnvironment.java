@@ -3,13 +3,9 @@ package environment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -96,6 +92,7 @@ public class MasTaskEnvironment {
 			numberOfAgents = currLineScanner.nextInt();
 			numberOfCycles = currLineScanner.nextInt();
 			LeftoverPenalty = currLineScanner.nextFloat();
+			currLineScanner.close();
 			
 			// consume empty line
 			String dummyLine = scan.nextLine().trim();
@@ -112,13 +109,16 @@ public class MasTaskEnvironment {
 				
 				while (currLineScanner.hasNextInt()) {
 					int cap = currLineScanner.nextInt();
-					if (!currLineScanner.hasNextInt())
+					if (!currLineScanner.hasNextInt()) {
+						currLineScanner.close();
 						throw new IOException("Wrong input Could not find cost for current capability.");
+					}
 					int cost = currLineScanner.nextInt();
 					newAgent.addCapability(new Integer(cap), new Integer(cost));
 				}
 				
-				agents.add(newAgent);
+				this.addAgent(newAgent);
+				currLineScanner.close();
 			}
 			
 			// consume another empty line
@@ -136,12 +136,50 @@ public class MasTaskEnvironment {
 					newCycle.tasks.add(new Task(cap));
 				}
 				
-				cycles.add(newCycle);
+				this.addCycle(newCycle);
+				currLineScanner.close();
 			}
 
 		}
 	}
 
+	public int getNumberOfAgents() {
+		return numberOfAgents;
+	}
+
+	public void setNumberOfAgents(int numberOfAgents) {
+		this.numberOfAgents = numberOfAgents;
+	}
+
+	public int getNumberOfCycles() {
+		return numberOfCycles;
+	}
+
+	public void setNumberOfCycles(int numberOfCycles) {
+		this.numberOfCycles = numberOfCycles;
+	}
+
+	public float getLeftoverPenalty() {
+		return LeftoverPenalty;
+	}
+
+	public AgentData getAgent(int agentIndex) {
+		return agents.get(agentIndex);
+	}
+	
+	public void addAgent(AgentData agent) {
+		this.agents.add(agent);
+	}
+	
+	public CycleData getCycle(int cycleIndex) {
+		return cycles.get(cycleIndex);
+	}
+	
+	public void addCycle(CycleData cycle) {
+		
+		this.cycles.add(cycle);
+	}
+	
 	@Override
 	public String toString() {
 		String ret = "MasTaskEnvironment looks like:\n";

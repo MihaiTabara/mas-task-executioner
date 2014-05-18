@@ -14,7 +14,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import environment.MasTaskEnvironment.AgentData;
 import agents.FacilitatorAgent;
+import agents.ProcessAgent;
 
 
 /**
@@ -51,8 +53,6 @@ public class Application {
 			env = new MasTaskEnvironment(input);
 		}
 		
-		//System.out.println(env.toString());
-		
         Properties properties = new ExtendedProperties();
         properties.setProperty(Profile.GUI, "false");
         properties.setProperty(Profile.MAIN, "true");
@@ -60,11 +60,19 @@ public class Application {
         ProfileImpl profile = new ProfileImpl((jade.util.leap.Properties) properties);
         AgentContainer agentMainContainer = Runtime.instance().createMainContainer(profile);
         
-        MasTaskEnvironment[] toSend = new MasTaskEnvironment[1];
-        toSend[0] = env;
-        
-        AgentController facilitatorControllerAgent = agentMainContainer.createNewAgent("facilitator", FacilitatorAgent.class.getName(), toSend);
+        MasTaskEnvironment[] dataToSendtoFacilitator = new MasTaskEnvironment[1];
+        dataToSendtoFacilitator[0] = env;
+        AgentController facilitatorControllerAgent = agentMainContainer.createNewAgent("facilitator", FacilitatorAgent.class.getName(), dataToSendtoFacilitator);
         facilitatorControllerAgent.start();
+        
+        for (int i = 0; i < env.getNumberOfAgents(); i++) {
+        	AgentData[] dataToSendToAgent = new AgentData[1];
+        	dataToSendToAgent[0] = env.getAgent(i);
+        	AgentController processorControllerAgent = agentMainContainer.createNewAgent("agent" + i, ProcessAgent.class.getName(), dataToSendToAgent);
+        	processorControllerAgent.start();
+        }
+        
+        
 	}
 
 }
