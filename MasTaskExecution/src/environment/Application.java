@@ -39,7 +39,8 @@ public class Application {
 		{
 			env = new MasTaskEnvironment(input);
 		}
-	
+		
+		System.out.println(env.toString());
 	}
 
 }

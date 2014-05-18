@@ -137,4 +137,22 @@ public class MasTaskEnvironment {
 		}
 	}
 
+	@Override
+	public String toString() {
+		String ret = "MasTaskEnvironment looks like:\n";
+		ret += "Number of agents " + numberOfAgents + "\n";
+		ret += "Number of cycles " + numberOfCycles + "\n";
+		ret += "Leftover penalty is " + LeftoverPenalty + "\n";
+		
+		for (int i = 0; i < numberOfAgents; i++) {
+			ret += agents.get(i).toString() + "\n";
+		}
+		
+		for (int i = 0; i < numberOfCycles; i++) {
+			ret += cycles.get(i).toString() + "\n";
+		}
+	
+		return ret;
+	}
+
 }
