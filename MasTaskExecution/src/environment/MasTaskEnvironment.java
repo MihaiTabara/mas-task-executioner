@@ -1,5 +1,7 @@
 package environment;
 
+import jade.core.Agent;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -24,6 +26,14 @@ public class MasTaskEnvironment {
 			this.cycleId = cycleId;
 		}
 
+		public List<Task> getTasks() {
+			return tasks;
+		}
+		
+		public Task getTask(int index) {
+			return tasks.get(index);
+		}
+
 		@Override
 		public String toString() {
 			String ret = "";
@@ -38,11 +48,13 @@ public class MasTaskEnvironment {
 	
 	public static class AgentData {
 		protected int id;
+		protected String name;
 		protected int budget;
 		protected Map<Integer, Integer> caps = new TreeMap<>();
 		
 		public AgentData(int id) {
 			this.id = id;
+			setName(new String("agent" + id));
 		}
 
 		public Integer getBudget() {
@@ -57,6 +69,18 @@ public class MasTaskEnvironment {
 			return id;
 		}
 		
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+		
+		public boolean equals(String name) {
+			return this.name.equals(name);
+		}
+
 		public void addCapability(Integer capability, Integer cost) {
 			caps.put(capability, cost);
 		}
@@ -145,6 +169,15 @@ public class MasTaskEnvironment {
 
 	public int getNumberOfAgents() {
 		return numberOfAgents;
+	}
+	
+	public AgentData getAgentByName(String nameToSearch) {
+		for (AgentData agent : agents) {
+			if (agent.equals(nameToSearch)) {
+				return agent;
+			}
+		}
+		return null;
 	}
 
 	public void setNumberOfAgents(int numberOfAgents) {

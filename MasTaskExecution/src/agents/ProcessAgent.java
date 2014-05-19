@@ -1,8 +1,16 @@
 package agents;
 
+import java.io.Serializable;
+import java.util.List;
+
 import environment.MasTaskEnvironment.AgentData;
+import environment.Task;
 import exceptions.MasException;
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 
 /**
  * @author mtabara
@@ -17,7 +25,6 @@ public class ProcessAgent extends Agent {
 	private AgentData myData;
 	@Override
 	protected void setup() {
-		System.out.println("Hello from " + this.getLocalName());
 		
 		Object[] args = getArguments();
 		if (args != null) {
@@ -33,7 +40,37 @@ public class ProcessAgent extends Agent {
 			}
 		}
 		
-		System.out.println(myData.toString());
+		addBehaviour(new CyclicBehaviour(this) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void action() {
+				ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+				
+				if (msg != null) {
+					if (msg.getProtocol().equals(Constants.STAGE1)) {
+						if (msg.getContent().equals("Greetings!")) {
+							System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
+							ACLMessage msgAnswer = msg.createReply();
+							msgAnswer.setPerformative(ACLMessage.REQUEST);
+							send(msgAnswer);
+						}
+						else {
+							System.out.println("[" + myData.getName() + "]" + "Am primit taskuri de la facilitator!");
+							try {
+								List<Task> ret = (List<Task>) msg.getContentObject();
+								// pay attention to null objects!
+								System.out.println(ret.toString());
+							} catch (UnreadableException e) {}
+						}
+					}
+				}
+				else {
+					block();
+				}
+			}
+		});
+		
 	}
 
 }

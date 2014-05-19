@@ -1,6 +1,12 @@
 package environment;
 
-public class Task {
+import java.io.Serializable;
+
+public class Task implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private static int counter = 0;
 	private int taskId;
 	private int requiredCapability;
