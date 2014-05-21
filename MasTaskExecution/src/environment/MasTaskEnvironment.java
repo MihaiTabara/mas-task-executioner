@@ -1,7 +1,5 @@
 package environment;
 
-import jade.core.Agent;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;

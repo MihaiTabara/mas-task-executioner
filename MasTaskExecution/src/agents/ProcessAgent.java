@@ -1,7 +1,14 @@
 package agents;
 
-import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import environment.MasTaskEnvironment.AgentData;
 import environment.Task;
@@ -21,8 +28,14 @@ public class ProcessAgent extends Agent {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 1L;
-	private AgentData myData;
+	protected static int currentStage = 0;
+	protected static final long serialVersionUID = 1L;
+	protected Set<Task> willDo = new HashSet<>();
+	protected List<Task> toDo = new ArrayList<>();
+	protected Set<Task> leftOvers = new HashSet<>(); 
+	protected int myBudget = 0;
+	protected AgentData myData;
+	
 	@Override
 	protected void setup() {
 		
@@ -45,23 +58,34 @@ public class ProcessAgent extends Agent {
 
 			@Override
 			public void action() {
-				ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), 
+															 MessageTemplate.MatchProtocol(Constants.STAGE0)));
 				
 				if (msg != null) {
-					if (msg.getProtocol().equals(Constants.STAGE0)) {
-						if (msg.getContent().equals("Greetings!")) {
-							System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
-							ACLMessage msgAnswer = msg.createReply();
-							msgAnswer.setPerformative(ACLMessage.REQUEST);
-							send(msgAnswer);
+					if (msg.getContent().equals("Greetings!")) {
+						System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
+						ACLMessage msgAnswer = msg.createReply();
+						msgAnswer.setPerformative(ACLMessage.REQUEST);
+						send(msgAnswer);
+					}
+					else {
+						System.out.println("[" + myData.getName() + "]" + "Am primit taskuri de la facilitator!");
+						List<Task> ret = new ArrayList<>();
+						try {
+							ret = (List<Task>) msg.getContentObject();
+						} catch (UnreadableException e) {}
+						
+						if (ret != null) {
+							for (Task t : ret) {
+								toDo.add(t);
+							}
 						}
-						else {
-							System.out.println("[" + myData.getName() + "]" + "Am primit taskuri de la facilitator!");
-							try {
-								List<Task> ret = (List<Task>) msg.getContentObject();
-								// pay attention to null objects!
-								System.out.println(ret.toString());
-							} catch (UnreadableException e) {}
+						currentStage = 1;
+						myBudget  = myData.getBudget();
+						try {
+							evaluateTaskList();
+						} catch (MasException e) {
+							e.printStackTrace();
 						}
 					}
 				}
@@ -70,7 +94,56 @@ public class ProcessAgent extends Agent {
 				}
 			}
 		});
+
+//		addBehaviour(new CyclicBehaviour(this) {
+//				private static final long serialVersionUID = 1L;
+//
+//				@Override
+//				public void action() {
+//					System.out.println("[" + myData.getName() + "]" + "Intru aici!");
+//				}
+//		});
+	}
+
+	protected void evaluateTaskList() throws MasException {
+		System.out.println("[" + myData.getName() + "]" + "Todo inainte de filtering: " + toDo.toString());
 		
+		for (Task t : toDo) {
+			if (myData.getCaps().get(t.getRequiredCapability()) == null ) {
+				leftOvers.add(t);
+			}
+		}
+		toDo.removeAll(leftOvers);
+
+		Collections.sort(toDo, new Comparator<Task>() {
+			public int compare(Task a, Task b) {
+		    	Map<Integer, Integer> caps = myData.getCaps();
+		    	int costA = caps.get(a.getRequiredCapability());
+		    	int costB = caps.get(b.getRequiredCapability());
+		    	return -Integer.valueOf(costA).compareTo(Integer.valueOf(costB));
+			}
+		});
+		
+		for (Task t : toDo) {
+			int cost = myData.getCaps().get(t.getRequiredCapability());
+			if (myBudget >= cost) {
+				myBudget -= cost;
+				willDo.add(t);
+			}
+			else {
+				leftOvers.add(t);
+			}
+		}
+		
+		toDo.removeAll(willDo);
+		toDo.removeAll(leftOvers);
+		
+		if (toDo.size() != 0) {
+			throw new MasException("Something went wrong with splitting tasks.");
+		}
+		System.out.println("[" + myData.getName() + "]" + "Todo final: " + toDo.toString());
+		System.out.println("[" + myData.getName() + "]" + "willDo: " + willDo.toString());
+		System.out.println("[" + myData.getName() + "]" + "Leftovers: " + leftOvers.toString());
 	}
 
 }
