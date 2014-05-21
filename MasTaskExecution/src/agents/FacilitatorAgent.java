@@ -11,7 +11,7 @@ import environment.MasTaskEnvironment;
 import environment.MasTaskEnvironment.AgentData;
 import environment.MasTaskEnvironment.CycleData;
 import environment.Task;
-import environment.TaskCapsule;
+import environment.YellowPageCapsule;
 import exceptions.MasException;
 import jade.core.AID;
 import jade.core.Agent;
@@ -94,16 +94,16 @@ public class FacilitatorAgent extends Agent {
 				
 				if (msg != null) {
 					System.out.println("[facilitator] Am primit REQUEST-YELLOW-PAGES de la " + msg.getSender().getLocalName());
-					List<TaskCapsule> ret = new ArrayList<>();
+					List<YellowPageCapsule> ret = new ArrayList<>();
 					try {
-						ret = (List<TaskCapsule>) msg.getContentObject();
+						ret = (List<YellowPageCapsule>) msg.getContentObject();
 					} catch (UnreadableException e) {}
 					
 					if (ret != null) {
-						for (TaskCapsule capsule : ret) {
+						for (YellowPageCapsule yCapsule : ret) {
 							for (AgentData agent : env.getAgents()) {
-								if (agent.hasCapability(capsule.getTask().getRequiredCapability())) {
-									capsule.addCandidate(agent.getName());
+								if (agent.hasCapability(yCapsule.getTask().getRequiredCapability())) {
+									yCapsule.addCandidate(agent.getName());
 								}
 							}
 						}
