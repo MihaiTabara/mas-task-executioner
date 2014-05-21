@@ -8,14 +8,17 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import environment.MasTaskEnvironment;
+import environment.MasTaskEnvironment.AgentData;
 import environment.MasTaskEnvironment.CycleData;
 import environment.Task;
+import environment.TaskCapsule;
 import exceptions.MasException;
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 
 /**
  * @author mtabara
@@ -60,22 +63,58 @@ public class FacilitatorAgent extends Agent {
 
 			@Override
 			public void action() {
-				ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), 
+														     MessageTemplate.MatchProtocol(Constants.STAGE0)));
 				
 				if (msg != null) {
-					if (msg.getProtocol().equals(Constants.STAGE0)) {
-						System.out.println("[facilitator] Am primit REQUEST de la " + msg.getSender().getLocalName());
-						int requestingAgent = env.getAgentByName(msg.getSender().getLocalName()).getId();
-						List<Task> tasksToAssign = taskAssigner.get(requestingAgent);
-						
-						ACLMessage msgToSend = msg.createReply();
-						msgToSend.setPerformative(ACLMessage.INFORM);
-						msgToSend.setContent("Incoming tasks ...");
-						try {
-							msgToSend.setContentObject((Serializable) tasksToAssign);
-						} catch (IOException e) {}
-						send(msgToSend);
+					System.out.println("[facilitator] Am primit REQUEST de la " + msg.getSender().getLocalName());
+					int requestingAgent = env.getAgentByName(msg.getSender().getLocalName()).getId();
+					List<Task> tasksToAssign = taskAssigner.get(requestingAgent);
+					
+					ACLMessage msgToSend = msg.createReply();
+					msgToSend.setPerformative(ACLMessage.INFORM);
+					try {
+						msgToSend.setContentObject((Serializable) tasksToAssign);
+					} catch (IOException e) {}
+					send(msgToSend);
+				}
+				else {
+					block();
+				}
+			}
+		});
+		
+		addBehaviour(new CyclicBehaviour(this) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void action() {
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), 
+														     MessageTemplate.MatchProtocol(Constants.STAGE1)));
+				
+				if (msg != null) {
+					System.out.println("[facilitator] Am primit REQUEST-YELLOW-PAGES de la " + msg.getSender().getLocalName());
+					List<TaskCapsule> ret = new ArrayList<>();
+					try {
+						ret = (List<TaskCapsule>) msg.getContentObject();
+					} catch (UnreadableException e) {}
+					
+					if (ret != null) {
+						for (TaskCapsule capsule : ret) {
+							for (AgentData agent : env.getAgents()) {
+								if (agent.hasCapability(capsule.getTask().getRequiredCapability())) {
+									capsule.addCandidate(agent.getName());
+								}
+							}
+						}
 					}
+					
+					ACLMessage msgToSend = msg.createReply();
+					msgToSend.setPerformative(ACLMessage.INFORM);
+					try {
+						msgToSend.setContentObject((Serializable) ret);
+					} catch (IOException e) {}
+					send(msgToSend);
 				}
 				else {
 					block();

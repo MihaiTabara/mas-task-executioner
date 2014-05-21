@@ -1,5 +1,7 @@
 package agents;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -12,7 +14,9 @@ import java.util.TreeSet;
 
 import environment.MasTaskEnvironment.AgentData;
 import environment.Task;
+import environment.TaskCapsule;
 import exceptions.MasException;
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
@@ -28,11 +32,12 @@ public class ProcessAgent extends Agent {
 	/**
 	 * 
 	 */
-	protected static int currentStage = 0;
 	protected static final long serialVersionUID = 1L;
+	protected static final String facilitatorName = "facilitator";
 	protected Set<Task> willDo = new HashSet<>();
 	protected List<Task> toDo = new ArrayList<>();
-	protected Set<Task> leftOvers = new HashSet<>(); 
+	protected Set<Task> leftOvers = new HashSet<>();
+	private List<TaskCapsule> taskCapsules = new ArrayList<>();
 	protected int myBudget = 0;
 	protected AgentData myData;
 	
@@ -80,7 +85,6 @@ public class ProcessAgent extends Agent {
 								toDo.add(t);
 							}
 						}
-						currentStage = 1;
 						myBudget  = myData.getBudget();
 						try {
 							evaluateTaskList();
@@ -95,14 +99,32 @@ public class ProcessAgent extends Agent {
 			}
 		});
 
-//		addBehaviour(new CyclicBehaviour(this) {
-//				private static final long serialVersionUID = 1L;
-//
-//				@Override
-//				public void action() {
-//					System.out.println("[" + myData.getName() + "]" + "Intru aici!");
-//				}
-//		});
+		addBehaviour(new CyclicBehaviour(this) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void action() {
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), 
+														     MessageTemplate.MatchProtocol(Constants.STAGE1)));
+				
+				if (msg != null) {
+					System.out.println("[" + myData.getName() + "]" + "Am primit yellow-pages de la facilitator!");
+					List<TaskCapsule> ret = new ArrayList<>();
+					try {
+						ret = (List<TaskCapsule>) msg.getContentObject();
+					} catch (UnreadableException e) {}
+					
+					if (ret != null) {
+						taskCapsules = ret;
+					}
+					
+					System.out.println("[" + myData.getName() + "]" + "YP: " + taskCapsules.toString());
+				}
+				else {
+					block();
+				}
+			}
+		});
 	}
 
 	protected void evaluateTaskList() throws MasException {
@@ -141,9 +163,30 @@ public class ProcessAgent extends Agent {
 		if (toDo.size() != 0) {
 			throw new MasException("Something went wrong with splitting tasks.");
 		}
+		
+		if (leftOvers.size() > 0)
+			askForYellowPages();
+		
 		System.out.println("[" + myData.getName() + "]" + "Todo final: " + toDo.toString());
 		System.out.println("[" + myData.getName() + "]" + "willDo: " + willDo.toString());
 		System.out.println("[" + myData.getName() + "]" + "Leftovers: " + leftOvers.toString());
+	}
+
+	private void askForYellowPages() {
+		taskCapsules.clear();
+		
+		for (Task t : leftOvers) {
+			TaskCapsule task = new TaskCapsule(t);
+			taskCapsules.add(task);
+		}
+		
+		ACLMessage yellowMsg = new ACLMessage(ACLMessage.REQUEST);
+		yellowMsg.setProtocol(Constants.STAGE1);
+		yellowMsg.addReceiver(new AID(facilitatorName, AID.ISLOCALNAME));
+		try {
+			yellowMsg.setContentObject((Serializable) taskCapsules);
+		} catch (IOException e) {}
+		send(yellowMsg);
 	}
 
 }

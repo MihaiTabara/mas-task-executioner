@@ -82,6 +82,12 @@ public class MasTaskEnvironment {
 		public void addCapability(Integer capability, Integer cost) {
 			caps.put(capability, cost);
 		}
+		
+		public boolean hasCapability(Integer capToTest) {
+			if (caps.get(capToTest) == null)
+				return false;
+			return true;
+		}
 
 		public Map<Integer, Integer> getCaps() {
 			return caps;
@@ -192,6 +198,10 @@ public class MasTaskEnvironment {
 
 	public float getLeftoverPenalty() {
 		return LeftoverPenalty;
+	}
+
+	public List<AgentData> getAgents() {
+		return agents;
 	}
 
 	public AgentData getAgent(int agentIndex) {
