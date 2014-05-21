@@ -48,7 +48,7 @@ public class FacilitatorAgent extends Agent {
 		
 		for (int i = 0; i < env.getNumberOfAgents(); i++) {
 			ACLMessage greetingsMsg = new ACLMessage(ACLMessage.INFORM);
-			greetingsMsg.setProtocol(Constants.STAGE1);
+			greetingsMsg.setProtocol(Constants.STAGE0);
 			greetingsMsg.addReceiver(new AID(env.getAgent(i).getName(), AID.ISLOCALNAME));
 			greetingsMsg.setContent("Greetings!");
 			send(greetingsMsg);
@@ -63,7 +63,7 @@ public class FacilitatorAgent extends Agent {
 				ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.REQUEST));
 				
 				if (msg != null) {
-					if (msg.getProtocol().equals(Constants.STAGE1)) {
+					if (msg.getProtocol().equals(Constants.STAGE0)) {
 						System.out.println("[facilitator] Am primit REQUEST de la " + msg.getSender().getLocalName());
 						int requestingAgent = env.getAgentByName(msg.getSender().getLocalName()).getId();
 						List<Task> tasksToAssign = taskAssigner.get(requestingAgent);

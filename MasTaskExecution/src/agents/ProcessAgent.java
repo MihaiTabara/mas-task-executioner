@@ -48,7 +48,7 @@ public class ProcessAgent extends Agent {
 				ACLMessage msg = receive(MessageTemplate.MatchPerformative(ACLMessage.INFORM));
 				
 				if (msg != null) {
-					if (msg.getProtocol().equals(Constants.STAGE1)) {
+					if (msg.getProtocol().equals(Constants.STAGE0)) {
 						if (msg.getContent().equals("Greetings!")) {
 							System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
 							ACLMessage msgAnswer = msg.createReply();

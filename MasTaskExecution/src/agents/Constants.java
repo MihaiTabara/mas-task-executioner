@@ -6,5 +6,5 @@ public final class Constants {
 		
 	}
 
-	public static final String STAGE1 = "INITIALIZER";
+	public static final String STAGE0 = "INITIALIZER";
 }
