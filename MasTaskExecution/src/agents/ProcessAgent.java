@@ -13,6 +13,7 @@ import java.util.Set;
 
 import environment.MasTaskEnvironment.AgentData;
 import environment.BidderTuple;
+import environment.ProfitCapsule;
 import environment.Task;
 import environment.TaskCapsule;
 import environment.YellowPageCapsule;
@@ -75,7 +76,6 @@ public class ProcessAgent extends Agent {
 			public void action() {
 				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), 
 															 MessageTemplate.MatchProtocol(Constants.STAGE0)));
-				
 				if (msg != null) {
 					if (msg.getContent().equals("Greetings!")) {
 						System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
@@ -428,6 +428,7 @@ public class ProcessAgent extends Agent {
 			@Override
             protected void onTick() {
                 if (checkAllCFPsDone() && nrOfAwaitingBids == 0) {
+                	nrOfAwaitingBids = -1; // TODO be careful at this ?
                 	System.out.println("[" + myData.getName() + "]" + "Done phase 1 +++++");
                 	
                 	ACLMessage donePhase1Msg = new ACLMessage(ACLMessage.INFORM);
@@ -439,6 +440,37 @@ public class ProcessAgent extends Agent {
                 
             }
         });
+		
+		addBehaviour(new CyclicBehaviour(this) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void action() {
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), 
+														     MessageTemplate.MatchProtocol(Constants.STAGE3)));
+				
+				if (msg != null) {
+					if (msg.getContent().equals("EXECUTE!")) {
+						System.out.println("[" + myData.getName() + "]" + "Am primit EXECUTE de la " + msg.getSender().getLocalName());
+						sendExecutionResults();
+					}
+				}
+				else {
+					block();
+				}
+			}
+		});
+	}
+
+	protected void sendExecutionResults() {
+		ACLMessage resultsMsg = new ACLMessage(ACLMessage.PROPOSE);
+		resultsMsg.setProtocol(Constants.STAGE3);
+		resultsMsg.addReceiver(new AID(facilitatorName, AID.ISLOCALNAME));
+		ProfitCapsule profitCapsule = new ProfitCapsule(0, leftOvers.size());
+		try {
+			resultsMsg.setContentObject((Serializable) profitCapsule);
+		} catch (IOException e) {}
+		send(resultsMsg);
 	}
 
 	protected void checkBiddedTaskComplete(Task biddedTask) {

@@ -3,13 +3,16 @@ package agents;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import environment.MasTaskEnvironment;
 import environment.MasTaskEnvironment.AgentData;
 import environment.MasTaskEnvironment.CycleData;
+import environment.ProfitCapsule;
 import environment.Task;
 import environment.YellowPageCapsule;
 import exceptions.MasException;
@@ -31,6 +34,10 @@ public class FacilitatorAgent extends Agent {
 	 */
 	private static final long serialVersionUID = 1L;
 	private MasTaskEnvironment env;
+	private Set<String> agentsReadyToExecute = new HashSet<>();
+	private Set<String> agentsWithResults = new HashSet<>();
+	private float overAllProfit = 0;
+	private float profitPerCycle = 0;
 
 	@Override
 	protected void setup() {
@@ -54,7 +61,6 @@ public class FacilitatorAgent extends Agent {
 			greetingsMsg.setProtocol(Constants.STAGE0);
 			greetingsMsg.addReceiver(new AID(env.getAgent(i).getName(), AID.ISLOCALNAME));
 			greetingsMsg.setContent("Greetings!");
-			System.out.println("trimit salutari la agent");
 			send(greetingsMsg);
 		}
 		
@@ -64,6 +70,7 @@ public class FacilitatorAgent extends Agent {
 
 			@Override
 			public void action() {
+				System.out.println("[facilitator] intru aici la REQUEST pe stage0");
 				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), 
 														     MessageTemplate.MatchProtocol(Constants.STAGE0)));
 				
@@ -122,8 +129,84 @@ public class FacilitatorAgent extends Agent {
 				}
 			}
 		});
+		
+		addBehaviour(new CyclicBehaviour(this) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void action() {
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.INFORM), 
+														     MessageTemplate.MatchProtocol(Constants.STAGE3)));
+				
+				if (msg != null) {
+					if (msg.getContent().equals("Ready for execution!")) {
+						System.out.println("[facilitator] Am primit INFORM de la " + msg.getSender().getLocalName() + "as he's ready!---");
+						agentsReadyToExecute.add(new String(msg.getSender().getLocalName()));
+						
+						checkAllhaveDone();
+					}
+				}
+				else {
+					block();
+				}
+			}
+		});
+		
+		addBehaviour(new CyclicBehaviour(this) {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void action() {
+				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.PROPOSE), 
+														     MessageTemplate.MatchProtocol(Constants.STAGE3)));
+				
+				if (msg != null) {
+					System.out.println("[facilitator] Am primit REZULTATE de la " + msg.getSender().getLocalName());
+					ProfitCapsule ret = null;
+					try {
+						ret = (ProfitCapsule) msg.getContentObject();
+					} catch (UnreadableException e) {}
+					
+					if (ret != null) {
+						String agentName = msg.getSender().getLocalName();
+						System.out.println(agentsWithResults.toString());
+						if (!agentsWithResults.contains(agentName)) {
+							agentsWithResults.add(agentName);
+							profitPerCycle += ret.getProfit();
+							float penalties = ((float)ret.getLeftOversNo()) * env.getLeftoverPenalty();
+							profitPerCycle += penalties;
+						}
+						checkAllResultsArrived();
+					}
+					
+				}
+				else {
+					block();
+				}
+			}
+		});
 	}
 	
+	protected void checkAllResultsArrived() {
+		if (agentsWithResults.size() == env.getNumberOfAgents()) {
+			System.out.println("Done cycle. Overall orofit is " + overAllProfit + "(" + profitPerCycle + " this cycle).");
+		}
+		
+	}
+
+	protected void checkAllhaveDone() {
+		if (agentsReadyToExecute.size() == env.getNumberOfAgents()) {
+			for (int i = 0; i < env.getNumberOfAgents(); i++) {
+				ACLMessage greetingsMsg = new ACLMessage(ACLMessage.REQUEST);
+				greetingsMsg.setProtocol(Constants.STAGE3);
+				greetingsMsg.addReceiver(new AID(env.getAgent(i).getName(), AID.ISLOCALNAME));
+				greetingsMsg.setContent("EXECUTE!");
+				System.out.println("[facilitator] Trimit EXECUTE la " + env.getAgent(i).getName());
+				send(greetingsMsg);
+			} 
+		}
+	}
+
 	private Map<Integer, List<Task>> randomizeTasksForCycle(int cycleId) {
 		System.out.println("amestec taskuri");
 		Map<Integer, List<Task>> taskAssigner = new TreeMap<>();
