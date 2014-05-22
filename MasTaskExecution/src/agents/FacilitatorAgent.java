@@ -73,12 +73,10 @@ public class FacilitatorAgent extends Agent {
 
 			@Override
 			public void action() {
-				//System.out.println("[facilitator] intru aici la REQUEST pe stage0");
 				ACLMessage msg = receive(MessageTemplate.and(MessageTemplate.MatchPerformative(ACLMessage.REQUEST), 
 														     MessageTemplate.MatchProtocol(Constants.STAGE0)));
 				
 				if (msg != null) {
-					//System.out.println("[facilitator] Am primit REQUEST de la " + msg.getSender().getLocalName());
 					int requestingAgent = env.getAgentByName(msg.getSender().getLocalName()).getId();
 					List<Task> tasksToAssign = taskAssigner.get(requestingAgent);
 					
@@ -112,7 +110,6 @@ public class FacilitatorAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE1)));
 				
 				if (msg != null) {
-					//System.out.println("[facilitator] Am primit REQUEST-YELLOW-PAGES de la " + msg.getSender().getLocalName());
 					List<YellowPageCapsule> ret = new ArrayList<>();
 					try {
 						ret = (List<YellowPageCapsule>) msg.getContentObject();
@@ -178,7 +175,6 @@ public class FacilitatorAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE3)));
 				
 				if (msg != null) {
-					//System.out.println("[facilitator] Am primit REZULTATE de la " + msg.getSender().getLocalName());
 					ProfitCapsule ret = null;
 					try {
 						ret = (ProfitCapsule) msg.getContentObject();
@@ -186,7 +182,6 @@ public class FacilitatorAgent extends Agent {
 					
 					if (ret != null) {
 						String agentName = msg.getSender().getLocalName();
-						//System.out.println(agentsWithResults.toString());
 						if (!agentsWithResults.contains(agentName)) {
 							agentsWithResults.add(agentName);
 							profitPerCycle += ret.getProfit();
