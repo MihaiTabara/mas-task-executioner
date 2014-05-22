@@ -34,7 +34,6 @@ public class Task implements Serializable {
 
 	@Override
 	public String toString() {
-		return "Task [taskId=" + taskId + ", requiredCapability="
-				+ requiredCapability + "]";
+		return "task " + taskId + " (cap " + requiredCapability + ");";
 	}
 }

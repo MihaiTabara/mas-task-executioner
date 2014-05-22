@@ -46,7 +46,7 @@ public class ProcessAgent extends Agent {
 	private Map<Integer, List<BidderTuple>> offers = new HashMap<Integer, List<BidderTuple>>();
 	private Map<Integer, Integer> cfpDone = new HashMap<>();
 	
-	private int nrOfAwaitingBids = 0;
+	private int nrOfAwaitingBids = -1;
 	
 	protected int myBudget = 0;
 	protected AgentData myData;
@@ -65,7 +65,6 @@ public class ProcessAgent extends Agent {
 			}
 			else {
 				myData = (AgentData)args[0];
-				System.out.println(myData.toString());
 			}
 		}
 		
@@ -78,13 +77,19 @@ public class ProcessAgent extends Agent {
 															 MessageTemplate.MatchProtocol(Constants.STAGE0)));
 				if (msg != null) {
 					if (msg.getContent().equals("Greetings!")) {
-						System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
+						willDo.clear();
+						toDo.clear();
+						offers.clear();
+						cfpDone.clear();
+						nrOfAwaitingBids = 0;
+						
+						//System.out.println("[" + myData.getName() + "]" + "Am primit greetings de la facilitator!");
 						ACLMessage msgAnswer = msg.createReply();
 						msgAnswer.setPerformative(ACLMessage.REQUEST);
 						send(msgAnswer);
 					}
 					else {
-						System.out.println("[" + myData.getName() + "]" + "Am primit taskuri de la facilitator!");
+						//System.out.println("[" + myData.getName() + "]" + "Am primit taskuri de la facilitator!");
 						List<Task> ret = new ArrayList<>();
 						try {
 							ret = (List<Task>) msg.getContentObject();
@@ -95,7 +100,9 @@ public class ProcessAgent extends Agent {
 								toDo.add(t);
 							}
 						}
+						
 						myBudget  = myData.getBudget();
+						
 						try {
 							evaluateTaskList();
 						} catch (MasException e) {
@@ -118,18 +125,18 @@ public class ProcessAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE1)));
 				
 				if (msg != null) {
-					System.out.println("[" + myData.getName() + "]" + "Am primit yellow-pages de la facilitator!");
+					//System.out.println("[" + myData.getName() + "]" + "Am primit yellow-pages de la facilitator!");
 					List<YellowPageCapsule> ret = new ArrayList<>();
 					try {
 						ret = (List<YellowPageCapsule>) msg.getContentObject();
 					} catch (UnreadableException e) {}
 					
 					if (ret != null) {
-						yellowPagedCapsules = ret;
+						for (YellowPageCapsule yCap : ret) {
+							yellowPagedCapsules.add(yCap);
+						}
+						callForProposals();
 					}
-					
-					System.out.println("[" + myData.getName() + "]" + "YP: " + yellowPagedCapsules.toString());
-					callForProposals();
 				}
 				else {
 					block();
@@ -147,7 +154,6 @@ public class ProcessAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE2)));
 				
 				if (msg != null) {
-					System.out.println("[" + myData.getName() + "]" + "Am primit CFP de la " + msg.getSender().getLocalName());
 					TaskCapsule ret = null;
 					try {
 						ret = (TaskCapsule) msg.getContentObject();
@@ -165,10 +171,9 @@ public class ProcessAgent extends Agent {
 								try {
 									msgAnswer.setContentObject((Serializable) ret);
 								} catch (IOException e) {}
-								send(msgAnswer);
+								System.out.println("AP " + ((int)myData.getId()+1) + " bids cost " + cost + " for " + ret.getTask().toString());
 								nrOfAwaitingBids++;
-								System.out.println("[" + myData.getName() + "]" + " sent PROPOSE to " + msg.getSender().getLocalName() + "for task " + ret.getTask().toString());
-								System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids after this PROPOSE is: " + nrOfAwaitingBids);
+								send(msgAnswer);
 							}
 							else {
 								ACLMessage msgAnswer = msg.createReply();
@@ -176,9 +181,10 @@ public class ProcessAgent extends Agent {
 								try {
 									msgAnswer.setContentObject((Serializable) ret);
 								} catch (IOException e) {}
+								System.out.println("AP " + ((int)myData.getId()+1) + " refuses " + ret.getTask().toString());
 								send(msgAnswer);
-								System.out.println("[" + myData.getName() + "]" + " sent REFUSE to " + msg.getSender().getLocalName() + "for task " + ret.getTask().toString());
-								System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids after this REFUSE is: " + nrOfAwaitingBids);
+								//System.out.println("[" + myData.getName() + "]" + " sent REFUSE to " + msg.getSender().getLocalName() + "for task " + ret.getTask().toString());
+								//System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids after this REFUSE is: " + nrOfAwaitingBids);
 							}
 						}
 						else {
@@ -209,7 +215,7 @@ public class ProcessAgent extends Agent {
 					try {
 						ret = (TaskCapsule) msg.getContentObject();
 					} catch (UnreadableException e) {}
-					System.out.println("[" + myData.getName() + "]" + "Am primit REFUSE de la " + msg.getSender().getLocalName() + " pentru taskul " + ret.getTask());
+					//System.out.println("[" + myData.getName() + "]" + "Am primit REFUSE de la " + msg.getSender().getLocalName() + " pentru taskul " + ret.getTask());
 					if (ret != null) {
 						Task biddedTask =  ret.getTask();
 						Integer taskId = Integer.valueOf(biddedTask.getTaskId());
@@ -219,7 +225,7 @@ public class ProcessAgent extends Agent {
 						}
 						bids.add(new BidderTuple(msg.getSender().getLocalName(), ret.getOffer()));
 						offers.put(taskId, bids);
-						System.out.println("[" + myData.getName() + "]" + "Am adaugat un refuz in tabela.");
+						//System.out.println("[" + myData.getName() + "]" + "Am adaugat un refuz in tabela.");
 						checkBiddedTaskComplete(biddedTask);
 					}
 				}
@@ -242,7 +248,7 @@ public class ProcessAgent extends Agent {
 					try {
 						ret = (TaskCapsule) msg.getContentObject();
 					} catch (UnreadableException e) {}
-					System.out.println("[" + myData.getName() + "]" + "Am primit PROPOSE de la " + msg.getSender().getLocalName() + " pentru taskul " + ret.getTask().toString());
+
 					if (ret != null) {
 						Task biddedTask =  ret.getTask();
 						
@@ -252,8 +258,9 @@ public class ProcessAgent extends Agent {
 							bids = new ArrayList<>();
 						}
 						bids.add(new BidderTuple(msg.getSender().getLocalName(), ret.getOffer()));
+						//System.out.println("[" + myData.getName() + "]" + "adaug un bid de " + ret.getOffer() + " pentru taskul " + ret.getTask().toString());
 						offers.put(taskId, bids);
-						System.out.println("[" + myData.getName() + "]" + "Am adaugat o oferta in tabela.");
+						//System.out.println("[" + myData.getName() + "]" + "Am adaugat o oferta in tabela.");
 						checkBiddedTaskComplete(biddedTask);
 					}
 				}
@@ -272,10 +279,10 @@ public class ProcessAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE2)));
 				
 				if (msg != null) {
-					System.out.println("[" + myData.getName() + "]" + "Am primit REJECT de la " + msg.getSender().getLocalName());
+					//System.out.println("[" + myData.getName() + "]" + "Am primit REJECT de la " + msg.getSender().getLocalName());
 					nrOfAwaitingBids--;
-					System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids dupa refuz/accept o oferta este acum " + nrOfAwaitingBids);
-					System.out.println("[" + myData.getName() + "]" + "Bugetul meu dupa refuz/accept o oferta este acum " + myBudget);
+					//System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids dupa refuz/accept o oferta este acum " + nrOfAwaitingBids);
+					//System.out.println("[" + myData.getName() + "]" + "Bugetul meu dupa refuz/accept o oferta este acum " + myBudget);
 				}
 				else {
 					block();
@@ -292,7 +299,7 @@ public class ProcessAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE2)));
 				
 				if (msg != null) {
-					System.out.println("[" + myData.getName() + "]" + "Am primit ACCEPT_PROPOSAL de la " + msg.getSender().getLocalName());
+					//System.out.println("[" + myData.getName() + "]" + "Am primit ACCEPT_PROPOSAL de la " + msg.getSender().getLocalName());
 					TaskCapsule ret = null;
 					try {
 						ret = (TaskCapsule) msg.getContentObject();
@@ -300,12 +307,13 @@ public class ProcessAgent extends Agent {
 					
 					if (ret != null) {
 						Task biddedTask =  ret.getTask();
+						System.out.println(biddedTask.toString() + " assigned to AP " + ((int)myData.getId()+1));
 						int cost = myData.getCaps().get(biddedTask.getRequiredCapability());
 						if (cost <= myBudget) {
 							myBudget -= cost;
-							System.out.println("[" + myData.getName() + "]" + " ACCEPT tasul asta: Leftovers before " + willDo.toString());
+							//System.out.println("[" + myData.getName() + "]" + " ACCEPT tasul asta: Leftovers before " + willDo.toString());
 							willDo.add(biddedTask);
-							System.out.println("[" + myData.getName() + "]" + " ACCEPT taskul asta Leftovers after " + willDo.toString());
+							//System.out.println("[" + myData.getName() + "]" + " ACCEPT taskul asta Leftovers after " + willDo.toString());
 							
 							ACLMessage handshakeMsg = msg.createReply();
 							handshakeMsg.setPerformative(ACLMessage.CONFIRM);
@@ -313,7 +321,7 @@ public class ProcessAgent extends Agent {
 								handshakeMsg.setContentObject((Serializable) ret);
 							} catch (IOException e) {}
 							send(handshakeMsg);
-							System.out.println("[" + myData.getName() + "]" + "Deal pentru taskul " + ret.getTask().toString() + "Trimit CONFIRM.");
+							//System.out.println("[" + myData.getName() + "]" + "Deal pentru taskul " + ret.getTask().toString() + "Trimit CONFIRM.");
 						}
 						else{
 							ACLMessage apologizeMsg = msg.createReply();
@@ -322,12 +330,13 @@ public class ProcessAgent extends Agent {
 								apologizeMsg.setContentObject((Serializable) ret);
 							} catch (IOException e) {}
 							send(apologizeMsg);
-							System.out.println("[" + myData.getName() + "]" + "Teapa pentru taskul " + ret.getTask().toString() + "Trimit DISCONFIRM.");
+							System.out.println(biddedTask.toString() + " is dropped (due to budget conflict) by AP " + ((int)myData.getId()+1));
+							//System.out.println("[" + myData.getName() + "]" + "Teapa pentru taskul " + ret.getTask().toString() + "Trimit DISCONFIRM.");
 						}
 					}
 					nrOfAwaitingBids--;
-					System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids dupa refuz/accept o oferta este acum " + nrOfAwaitingBids);
-					System.out.println("[" + myData.getName() + "]" + "Bugetul meu dupa refuz/accept o oferta este acum " + myBudget);
+					//System.out.println("[" + myData.getName() + "]" + "Nr of awaiting bids dupa refuz/accept o oferta este acum " + nrOfAwaitingBids);
+					//System.out.println("[" + myData.getName() + "]" + "Bugetul meu dupa refuz/accept o oferta este acum " + myBudget);
 				}
 				else {
 					block();
@@ -344,7 +353,7 @@ public class ProcessAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE2)));
 				
 				if (msg != null) {
-					System.out.println("[" + myData.getName() + "]" + "Am primit CONFIRM de la " + msg.getSender().getLocalName());
+					//System.out.println("[" + myData.getName() + "]" + "Am primit CONFIRM de la " + msg.getSender().getLocalName());
 					TaskCapsule ret = null;
 					try {
 						ret = (TaskCapsule) msg.getContentObject();
@@ -354,7 +363,7 @@ public class ProcessAgent extends Agent {
 						Task biddedTask =  ret.getTask();
 						Integer biddedTaskId = Integer.valueOf(biddedTask.getTaskId());
 						 
-						System.out.println("[" + myData.getName() + "]" + " primesc confirm: Leftovers before " + leftOvers.toString());
+						//System.out.println("[" + myData.getName() + "]" + " primesc confirm: Leftovers before " + leftOvers.toString());
 						Task toRemove = null;
 						for (Task t : leftOvers) {
 							if (t.getTaskId() == biddedTask.getTaskId()) {
@@ -363,15 +372,15 @@ public class ProcessAgent extends Agent {
 							}
 						}
 						leftOvers.remove(toRemove);
-						System.out.println("[" + myData.getName() + "]" + " primesc confirm Leftovers after " + leftOvers.toString());
+						//System.out.println("[" + myData.getName() + "]" + " primesc confirm Leftovers after " + leftOvers.toString());
 						
 						if (!cfpDone.entrySet().contains(biddedTaskId)) {
-							System.out.println("[" + myData.getName() + "]" + "Marchez " + biddedTask.toString() + " ca fiind done.");
-							System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " inainte de marcare: " + cfpDone.get(biddedTaskId));
+							//System.out.println("[" + myData.getName() + "]" + "Marchez " + biddedTask.toString() + " ca fiind done.");
+							//System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " inainte de marcare: " + cfpDone.get(biddedTaskId));
 							cfpDone.put(biddedTaskId, new Integer(1));
-							System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " dupa marcare: " + cfpDone.get(biddedTaskId));
+							//System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " dupa marcare: " + cfpDone.get(biddedTaskId));
 						}
-						System.out.println("[" + myData.getName() + "]" + "cfpDone.size() after add " + cfpDone.entrySet().size());
+						//System.out.println("[" + myData.getName() + "]" + "cfpDone.size() after add " + cfpDone.entrySet().size());
 						checkAllCFPsDone();
 					}
 				}
@@ -390,7 +399,7 @@ public class ProcessAgent extends Agent {
 														     MessageTemplate.MatchProtocol(Constants.STAGE2)));
 				
 				if (msg != null) {
-					System.out.println("[" + myData.getName() + "]" + "Am primit DISCONFIRM de la " + msg.getSender().getLocalName());
+					//System.out.println("[" + myData.getName() + "]" + "Am primit DISCONFIRM de la " + msg.getSender().getLocalName());
 					TaskCapsule ret = null;
 					try {
 						ret = (TaskCapsule) msg.getContentObject();
@@ -400,15 +409,15 @@ public class ProcessAgent extends Agent {
 						Task biddedTask =  ret.getTask();
 						Integer biddedTaskId = Integer.valueOf(biddedTask.getTaskId());
 						
-						System.out.println("[" + myData.getName() + "]" + " disconfirm Leftovers before " + leftOvers.toString());
-						
+						//System.out.println("[" + myData.getName() + "]" + " disconfirm Leftovers before " + leftOvers.toString());
+						System.out.println("AP " + ((int)myData.getId()+1) + " postpones " + biddedTask.toString() + " as was dropped.");
 						if (!cfpDone.entrySet().contains(biddedTaskId)) {
-							System.out.println("[" + myData.getName() + "]" + "Marchez " + biddedTask.toString() + " ca fiind done.");
-							System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " inainte de marcare: " + cfpDone.get(biddedTaskId));
+							//System.out.println("[" + myData.getName() + "]" + "Marchez " + biddedTask.toString() + " ca fiind done.");
+							//System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " inainte de marcare: " + cfpDone.get(biddedTaskId));
 							cfpDone.put(biddedTaskId, new Integer(1));
-							System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " dupa marcare: " + cfpDone.get(biddedTaskId));
+							//System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " dupa marcare: " + cfpDone.get(biddedTaskId));
 						}
-						System.out.println("[" + myData.getName() + "]" + "cfpDone.size() after add " + cfpDone.entrySet().size());
+						//System.out.println("[" + myData.getName() + "]" + "cfpDone.size() after add " + cfpDone.entrySet().size());
 						checkAllCFPsDone();						
 					}
 				}
@@ -427,9 +436,9 @@ public class ProcessAgent extends Agent {
 
 			@Override
             protected void onTick() {
-                if (checkAllCFPsDone() && nrOfAwaitingBids == 0) {
-                	nrOfAwaitingBids = -1; // TODO be careful at this ?
-                	System.out.println("[" + myData.getName() + "]" + "Done phase 1 +++++");
+                if (nrOfAwaitingBids == 0 && checkAllCFPsDone()) {
+                	nrOfAwaitingBids = -1;
+                	//System.out.println("[" + myData.getName() + "]" + "Done phase 1 +++++");
                 	
                 	ACLMessage donePhase1Msg = new ACLMessage(ACLMessage.INFORM);
                 	donePhase1Msg.setProtocol(Constants.STAGE3);
@@ -451,7 +460,24 @@ public class ProcessAgent extends Agent {
 				
 				if (msg != null) {
 					if (msg.getContent().equals("EXECUTE!")) {
-						System.out.println("[" + myData.getName() + "]" + "Am primit EXECUTE de la " + msg.getSender().getLocalName());
+						//System.out.println("[" + myData.getName() + "]" + "Am primit EXECUTE de la " + msg.getSender().getLocalName());
+						String toPrint = "";
+						if (willDo.size() > 0) {
+							toPrint += "AP " + ((int)myData.getId()+1) + " executes: ";
+							for (Task t : willDo) {
+								toPrint += t.toString() + " ";
+							}
+						}
+						if (leftOvers.size() > 0) {
+							toPrint += "AP " + ((int)myData.getId()+1) + " leftovers: ";
+							for (Task t : leftOvers) {
+								toPrint += t.toString() + " ";
+							}
+						}
+						if (toPrint != "") {
+							System.out.println(toPrint);
+						}
+						
 						sendExecutionResults();
 					}
 				}
@@ -471,88 +497,96 @@ public class ProcessAgent extends Agent {
 			resultsMsg.setContentObject((Serializable) profitCapsule);
 		} catch (IOException e) {}
 		send(resultsMsg);
+		//System.out.println("[" + myData.getName() + "]" + "END OF CURRENT CYCLE! ---------");
 	}
 
 	protected void checkBiddedTaskComplete(Task biddedTask) {
+		int expectedOffersNo = 0;
 		for (YellowPageCapsule yCap : yellowPagedCapsules) {
-			if (yCap.getTask().getTaskId() == biddedTask.getTaskId()) {
-				// all answers for this task arrived - it can be processed
-				Integer biddedTaskId = Integer.valueOf(biddedTask.getTaskId());
-				if (offers.containsKey(biddedTaskId) && offers.get(biddedTaskId).size() == yCap.getCandidates().size()) {
-					System.out.println("[" + myData.getName() + "]" + "Oferte stranse pentru " + biddedTask.toString());
-					
-					List<BidderTuple> bids = offers.get(biddedTaskId);
-					BidderTuple winner = Collections.min(bids, new Comparator<BidderTuple>() {
-						public int compare(BidderTuple a, BidderTuple b) {
-					    	return Integer.valueOf(a.getBid()).compareTo(Integer.valueOf(b.getBid()));
-						}
-					});
-					
-					System.out.println("[" + myData.getName() + "]" + "Castigatorul arata cam asa" + winner.toString());
-					if (winner.getBid() >= 0 ) {
-						// send winner an ACCEPT_PROPOSAL
-						ACLMessage winnerMsg = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
-						winnerMsg.setProtocol(Constants.STAGE2);
-						winnerMsg.addReceiver(new AID(winner.getAgentName(), AID.ISLOCALNAME));
-						try {
-							winnerMsg.setContentObject((Serializable) new TaskCapsule(biddedTask));
-						} catch (IOException e) {}
-						send(winnerMsg);
-						System.out.println("[" + myData.getName() + "]" + "Trimit ACCEPT_PROPOSAL lui " + winner.getAgentName());
-						// send losers a REJECT_PROPOSAL
-						bids.remove(winner);
-						for (BidderTuple loser : bids) {
-							if (loser.getBid() >= 0) {
-								// if the agent actually sent a PROPOSE message
-								ACLMessage loserMsg = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
-								loserMsg.setProtocol(Constants.STAGE2);
-								loserMsg.addReceiver(new AID(loser.getAgentName(), AID.ISLOCALNAME));
-								try {
-									loserMsg.setContentObject((Serializable) new TaskCapsule(biddedTask));
-								} catch (IOException e) {}
-								send(loserMsg);
-								System.out.println("[" + myData.getName() + "]" + "Trimit REJECT_PROPOSAL lui " + loser.getAgentName());
-							}	
-						}
-					} 
-					else {
-						System.out.println("[" + myData.getName() + "]" + "Nu am castigtor pentru " + biddedTask.toString());
-						System.out.println("[" + myData.getName() + "]" + "Taskul " + biddedTask.toString() + " imi ramane mie.");
-						
-						System.out.println("[" + myData.getName() + "]" + "cfpDone.size() before add " + cfpDone.entrySet().size());
-						if (!cfpDone.entrySet().contains(biddedTaskId)) {
-							System.out.println("[" + myData.getName() + "]" + "Marchez " + biddedTask.toString() + " ca fiind done.");
-							System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " inainte de marcare: " + cfpDone.get(biddedTaskId));
-							cfpDone.put(biddedTaskId, new Integer(1));
-							System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " dupa marcare: " + cfpDone.get(biddedTaskId));
-						}
-						System.out.println("[" + myData.getName() + "]" + "cfpDone.size() after add " + cfpDone.entrySet().size());
-						checkAllCFPsDone();
-					}
-					
-				}
+			if (biddedTask.getRequiredCapability() == yCap.getTask().getRequiredCapability()) {
+				expectedOffersNo = yCap.getCandidates().size();
 			}
+		}
+		//System.out.println("[" + myData.getName() + "]" + "Expected offers: " + expectedOffersNo);
+		// all answers for this task arrived - it can be processed
+		Integer biddedTaskId = Integer.valueOf(biddedTask.getTaskId());
+		if (offers.containsKey(biddedTaskId) && offers.get(biddedTaskId).size() == expectedOffersNo) {
+			//System.out.println("[" + myData.getName() + "]" + "Oferte stranse pentru " + biddedTask.toString());
+			
+			List<BidderTuple> bids = offers.get(biddedTaskId);
+			BidderTuple winner = Collections.min(bids, new Comparator<BidderTuple>() {
+				public int compare(BidderTuple a, BidderTuple b) {
+			    	return Integer.valueOf(a.getBid()).compareTo(Integer.valueOf(b.getBid()));
+				}
+			});
+			
+			//System.out.println("[" + myData.getName() + "]" + "Castigatorul arata cam asa" + winner.toString());
+			if (winner.getBid() < Constants.INFINIT ) {
+				// send winner an ACCEPT_PROPOSAL
+				ACLMessage winnerMsg = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+				winnerMsg.setProtocol(Constants.STAGE2);
+				winnerMsg.addReceiver(new AID(winner.getAgentName(), AID.ISLOCALNAME));
+				
+				try {
+					winnerMsg.setContentObject((Serializable) new TaskCapsule(biddedTask));
+				} catch (IOException e) {}
+				
+				//System.out.println("[" + myData.getName() + "]" + "Trimit ACCEPT_PROPOSAL lui " + winner.getAgentName());
+				send(winnerMsg);
+				
+				// send losers a REJECT_PROPOSAL
+				bids.remove(winner);
+				for (BidderTuple loser : bids) {
+					if (loser.getBid() < Constants.INFINIT) {
+						// if the agent actually sent a PROPOSE message
+						ACLMessage loserMsg = new ACLMessage(ACLMessage.REJECT_PROPOSAL);
+						loserMsg.setProtocol(Constants.STAGE2);
+						loserMsg.addReceiver(new AID(loser.getAgentName(), AID.ISLOCALNAME));
+						try {
+							loserMsg.setContentObject((Serializable) new TaskCapsule(biddedTask));
+						} catch (IOException e) {}
+						
+						//System.out.println("[" + myData.getName() + "]" + "Trimit REJECT_PROPOSAL lui " + loser.getAgentName());
+						send(loserMsg);
+					}	
+				}
+			} 
+			else {
+//				System.out.println("[" + myData.getName() + "]" + "Nu am castigtor pentru " + biddedTask.toString());
+//				System.out.println("[" + myData.getName() + "]" + "Taskul " + biddedTask.toString() + " imi ramane mie.");
+//				
+//				System.out.println("[" + myData.getName() + "]" + "cfpDone.size() before add " + cfpDone.entrySet().size());
+				System.out.println("AP " + ((int)myData.getId()+1) + " postpones " + biddedTask.toString());
+				if (!cfpDone.entrySet().contains(biddedTaskId)) {
+//					System.out.println("[" + myData.getName() + "]" + "Marchez " + biddedTask.toString() + " ca fiind done.");
+//					System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " inainte de marcare: " + cfpDone.get(biddedTaskId));
+					cfpDone.put(biddedTaskId, new Integer(1));
+					//System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul " + biddedTask.toString() + " dupa marcare: " + cfpDone.get(biddedTaskId));
+				}
+				//System.out.println("[" + myData.getName() + "]" + "cfpDone.size() after add " + cfpDone.entrySet().size());
+				checkAllCFPsDone();
+			}
+			
 		}
 		
 	}
 
 	private boolean checkAllCFPsDone() {
-		for (YellowPageCapsule yCapsule : yellowPagedCapsules) {
-			Task cfpedTask = yCapsule.getTask();
+		for (Task cfpedTask : leftOvers) {
 			Integer taskId = Integer.valueOf(cfpedTask.getTaskId());
-			System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul: " + cfpedTask.toString() + " este " + cfpDone.get(taskId));
+			//System.out.println("[" + myData.getName() + "]" + "cfpDone pentru taskul: " + cfpedTask.toString() + " este " + cfpDone.get(taskId));
 			if (cfpDone.get(taskId) == null) {
-				System.out.println("[" + myData.getName() + "]" + "Inca nu e gata de procesat " + cfpedTask.toString());
+				//System.out.println("[" + myData.getName() + "]" + "Inca nu e gata de procesat " + cfpedTask.toString());
 				return false;
 			}
 		}
 		
-		System.out.println("[" + myData.getName() + "]" + "Toate CFP-urile sunt gata.");
+		//System.out.println("[" + myData.getName() + "]" + "Toate CFP-urile sunt gata.");
 		return true;
 	}
 
 	protected void evaluateTaskList() throws MasException {
-		System.out.println("[" + myData.getName() + "]" + "Todo inainte de filtering: " + toDo.toString());
+		//System.out.println("[" + myData.getName() + "]" + "Todo inainte de filtering: " + toDo.toString());
 		
 		for (Task t : toDo) {
 			if (myData.getCaps().get(t.getRequiredCapability()) == null ) {
@@ -587,47 +621,90 @@ public class ProcessAgent extends Agent {
 		if (toDo.size() != 0) {
 			throw new MasException("Something went wrong with splitting tasks.");
 		}
+//		
+//		System.out.println("[" + myData.getName() + "]" + "Todo final: " + toDo.toString());
+//		System.out.println("[" + myData.getName() + "]" + "willDo: " + willDo.toString());
+//		System.out.println("[" + myData.getName() + "]" + "Leftovers: " + leftOvers.toString());
+//		System.out.println("[" + myData.getName() + "]" + "Budget left: " + myBudget);
 		
 		if (leftOvers.size() > 0)
-			askForYellowPages();
-		
-		System.out.println("[" + myData.getName() + "]" + "Todo final: " + toDo.toString());
-		System.out.println("[" + myData.getName() + "]" + "willDo: " + willDo.toString());
-		System.out.println("[" + myData.getName() + "]" + "Leftovers: " + leftOvers.toString());
-		System.out.println("[" + myData.getName() + "]" + "Budget left: " + myBudget);
+			beforeCallForProposals();
+
 	}
 
-	private void askForYellowPages() {
-		yellowPagedCapsules.clear();
+	private void askForYellowPages(List<YellowPageCapsule> pagesToCallFor) {
 		
-		for (Task t : leftOvers) {
-			YellowPageCapsule yCapsule = new YellowPageCapsule(t);
-			yellowPagedCapsules.add(yCapsule);
+		String toPrint = "AP " + ((int)myData.getId()+1) + " asks AF about: ";
+		for (YellowPageCapsule yCap : pagesToCallFor) {
+			toPrint += yCap.getTask().toString() + " "; 
 		}
+		System.out.println(toPrint);
 		
 		ACLMessage yellowMsg = new ACLMessage(ACLMessage.REQUEST);
 		yellowMsg.setProtocol(Constants.STAGE1);
 		yellowMsg.addReceiver(new AID(facilitatorName, AID.ISLOCALNAME));
 		try {
-			yellowMsg.setContentObject((Serializable) yellowPagedCapsules);
+			yellowMsg.setContentObject((Serializable) pagesToCallFor);
 		} catch (IOException e) {}
+		
 		send(yellowMsg);
 	}
 	
-	protected void callForProposals() {
-		for (YellowPageCapsule yCapsule : yellowPagedCapsules ) {
-			for (String agentName : yCapsule.getCandidates()) {
-				TaskCapsule taskCapsule = new TaskCapsule(yCapsule.getTask());
-				
-				ACLMessage taskCapsuleMsg = new ACLMessage(ACLMessage.CFP);
-				taskCapsuleMsg.setProtocol(Constants.STAGE2);
-				taskCapsuleMsg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
-				try {
-					taskCapsuleMsg.setContentObject((Serializable) taskCapsule);
-				} catch (IOException e) {}
-				System.out.println("[" + myData.getName() + "]" + "Trimit CFP la " + agentName + "pentru taskul: " + yCapsule.getTask().toString());
-				send(taskCapsuleMsg);
-			}			
+	protected void beforeCallForProposals() {
+		List<YellowPageCapsule> pagesToCallFor = new ArrayList<>();
+		//System.out.println("[" + myData.getName() + "]" + "beforeCallProposal");
+		
+		for (Task t : leftOvers) {
+			boolean taskToQueryFor = true;
+			for (YellowPageCapsule yCap : yellowPagedCapsules) {
+				if (t.getRequiredCapability() == yCap.getTask().getRequiredCapability()) {
+					taskToQueryFor = false;
+					break;
+				}
+			}
+			for (YellowPageCapsule yCap : pagesToCallFor) {
+				if (t.getRequiredCapability() == yCap.getTask().getRequiredCapability()) {
+					taskToQueryFor = false;
+					break;
+				}
+			}
+			if (taskToQueryFor) {
+				pagesToCallFor.add(new YellowPageCapsule(t));
+			}
+		}
+		
+		if (pagesToCallFor.size() > 0) {
+			askForYellowPages(pagesToCallFor);
+		}
+		else {
+			callForProposals();
+		}
+	}
+	
+	protected void callForProposals() {		
+
+		for (Task t : leftOvers) {
+			for (YellowPageCapsule yCapsule : yellowPagedCapsules) {
+				if (t.getRequiredCapability() == yCapsule.getTask().getRequiredCapability()) {
+					for (String agentName : yCapsule.getCandidates()) {
+						TaskCapsule taskCapsule = new TaskCapsule(t);
+						
+						ACLMessage taskCapsuleMsg = new ACLMessage(ACLMessage.CFP);
+						taskCapsuleMsg.setProtocol(Constants.STAGE2);
+						taskCapsuleMsg.addReceiver(new AID(agentName, AID.ISLOCALNAME));
+						try {
+							taskCapsuleMsg.setContentObject((Serializable) taskCapsule);
+						} catch (IOException e) {}
+						//System.out.println("[" + myData.getName() + "]" + "Trimit CFP la " + agentName + "pentru taskul: " + yCapsule.getTask().toString());
+						
+						
+						send(taskCapsuleMsg);
+					}
+					String toPrint = "AP " + ((int)myData.getId()+1) + ": cfp for " + t.toString();
+					System.out.println(toPrint);
+					break;
+				}
+			}
 		}
 	}
 

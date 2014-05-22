@@ -99,8 +99,12 @@ public class MasTaskEnvironment {
 
 		@Override
 		public String toString() {
-			return "AgentData [id=" + id + ", budget=" + budget + ", caps="
-					+ caps + "]";
+			String ret = "";
+			ret += "AP " + ((int)getId()+1) + ": budget " + getBudget() + "; capabilities ";
+			for (Integer cap : caps.keySet()) {
+				ret += cap + " (cost " + caps.get(cap) + "); ";
+			}
+			return ret;
 		}
 		
 		

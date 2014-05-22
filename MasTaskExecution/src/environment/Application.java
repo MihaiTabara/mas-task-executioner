@@ -44,8 +44,9 @@ public class Application {
 	 * 			- if input file is corrupted
 	 * @throws StaleProxyException
 	 * 			- for an attempt to use an wrapper object
+	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args) throws FileNotFoundException, IOException, StaleProxyException
+	public static void main(String[] args) throws FileNotFoundException, IOException, StaleProxyException, InterruptedException
 	{
 		MasTaskEnvironment env = null;
 		try (InputStream input = new FileInputStream(SI))
@@ -59,11 +60,6 @@ public class Application {
         properties.setProperty(Profile.CONTAINER_NAME, "MasTaskContainer");
         ProfileImpl profile = new ProfileImpl((jade.util.leap.Properties) properties);
         AgentContainer agentMainContainer = Runtime.instance().createMainContainer(profile);
-        
-        MasTaskEnvironment[] dataToSendtoFacilitator = new MasTaskEnvironment[1];
-        dataToSendtoFacilitator[0] = env;
-        AgentController facilitatorControllerAgent = agentMainContainer.createNewAgent("facilitator", FacilitatorAgent.class.getName(), dataToSendtoFacilitator);
-        facilitatorControllerAgent.start();
                
         for (int i = 0; i < env.getNumberOfAgents(); i++) {
         	AgentData[] dataToSendToAgent = new AgentData[1];
@@ -71,6 +67,12 @@ public class Application {
         	AgentController processorControllerAgent = agentMainContainer.createNewAgent("agent" + i, ProcessAgent.class.getName(), dataToSendToAgent);
         	processorControllerAgent.start();
         }
+        
+        Thread.sleep(2);
+        MasTaskEnvironment[] dataToSendtoFacilitator = new MasTaskEnvironment[1];
+        dataToSendtoFacilitator[0] = env;
+        AgentController facilitatorControllerAgent = agentMainContainer.createNewAgent("facilitator", FacilitatorAgent.class.getName(), dataToSendtoFacilitator);
+        facilitatorControllerAgent.start();
         
         
 	}

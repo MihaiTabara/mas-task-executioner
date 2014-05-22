@@ -2,13 +2,15 @@ package environment;
 
 import java.io.Serializable;
 
+import agents.Constants;
+
 public class TaskCapsule implements Serializable {
 /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	private Task task;
-	int offer = -1;
+	int offer = Constants.INFINIT;
 	
 	public TaskCapsule(Task task) {
 		this.task = task;
