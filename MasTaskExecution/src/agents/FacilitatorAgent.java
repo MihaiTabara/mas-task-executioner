@@ -54,6 +54,7 @@ public class FacilitatorAgent extends Agent {
 			greetingsMsg.setProtocol(Constants.STAGE0);
 			greetingsMsg.addReceiver(new AID(env.getAgent(i).getName(), AID.ISLOCALNAME));
 			greetingsMsg.setContent("Greetings!");
+			System.out.println("trimit salutari la agent");
 			send(greetingsMsg);
 		}
 		
@@ -124,6 +125,7 @@ public class FacilitatorAgent extends Agent {
 	}
 	
 	private Map<Integer, List<Task>> randomizeTasksForCycle(int cycleId) {
+		System.out.println("amestec taskuri");
 		Map<Integer, List<Task>> taskAssigner = new TreeMap<>();
 		CycleData currentCycleData = env.getCycle(cycleId);
 	

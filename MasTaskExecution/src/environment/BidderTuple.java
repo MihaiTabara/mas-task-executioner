@@ -25,4 +25,9 @@ public class BidderTuple {
 		this.bid = bid;
 	}
 
+	@Override
+	public String toString() {
+		return "BidderTuple [agentName=" + agentName + ", bid=" + bid + "]";
+	}
+
 }

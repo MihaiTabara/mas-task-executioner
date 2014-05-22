@@ -64,7 +64,7 @@ public class Application {
         dataToSendtoFacilitator[0] = env;
         AgentController facilitatorControllerAgent = agentMainContainer.createNewAgent("facilitator", FacilitatorAgent.class.getName(), dataToSendtoFacilitator);
         facilitatorControllerAgent.start();
-        
+               
         for (int i = 0; i < env.getNumberOfAgents(); i++) {
         	AgentData[] dataToSendToAgent = new AgentData[1];
         	dataToSendToAgent[0] = env.getAgent(i);
