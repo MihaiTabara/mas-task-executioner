@@ -28,27 +28,75 @@ import jade.lang.acl.UnreadableException;
 
 /**
  * @author mtabara
- *
+ * This class describes the behaviour of the Process Agent
  */
 public class ProcessAgent extends Agent {
 
-	/**
-	 * 
-	 */
 	protected static final long serialVersionUID = 1L;
+	
+	/**
+	 * Constant for the facilitator name to be universally accessible by all
+	 * agents
+	 */
 	protected static final String facilitatorName = "facilitator";
 	
+	/**
+	 * The set of tasks an agent commits to execute
+	 */
 	protected Set<Task> willDo = new HashSet<>();
+	
+	/**
+	 * The set of tasks received from the {@link FacilitatorAgent} to be
+	 * executed in the current iteration cycle. This structure is wiped 
+	 * away each cycle
+	 */
 	protected List<Task> toDo = new ArrayList<>();
+	
+	/**
+	 * The set of tasks an agent is *unable* to execute (due to budget
+	 * constraints or capability issues). This structure does not change 
+	 * between cycles
+	 */
 	protected Set<Task> leftOvers = new HashSet<>();
 	
+	/**
+	 * The yellow pages structure an agents uses when it needs to call for 
+	 * proposals. The structure is exchanged with the {@link FacilitatorAgent}
+	 * to gather the infomation needed. This structure does not change between 
+	 * cycles
+	 */
 	private List<YellowPageCapsule> yellowPagedCapsules = new ArrayList<>();
+	
+	/**
+	 * Retains all information about bidding for a specific task id. It clears
+	 * out each iteration
+	 */
 	private Map<Integer, List<BidderTuple>> offers = new HashMap<Integer, List<BidderTuple>>();
+	
+	/**
+	 * Verify should a task is finalized in the process started by the CFP 
+	 * performative. Thus, if (bidded and assiged) or (refused and postponed)
+	 * the mapping will be made, 
+	 */
 	private Map<Integer, Integer> cfpDone = new HashMap<>();
 	
+	/**
+	 * Variable to keep in mind at each iteration should the agent awaits any
+	 * answers from potential bidding he might have done
+	 */
 	private int nrOfAwaitingBids = -1;
 	
+	/**
+	 * Holds the budget of the agent in the current iteration
+	 */
 	protected int myBudget = 0;
+	
+	/**
+	 * Holds the information received from the Application when the Jade
+	 * platform and main container are created. Holds all the information
+	 * an agents knows about itself (capabilities and costs, fixed budget 
+	 * per cycle, etc).
+	 */
 	protected AgentData myData;
 	
 	@Override
@@ -453,6 +501,10 @@ public class ProcessAgent extends Agent {
 		});
 	}
 
+	/**
+	 * When in stage3, count the leftovers tasks and send the results to 
+	 * the {@link FacilitatorAgent}.
+	 */
 	protected void sendExecutionResults() {
 		ACLMessage resultsMsg = new ACLMessage(ACLMessage.PROPOSE);
 		resultsMsg.setProtocol(Constants.STAGE3);
@@ -464,6 +516,12 @@ public class ProcessAgent extends Agent {
 		send(resultsMsg);
 	}
 
+	/**
+	 * @param biddedTask
+	 * 		- the task for which an offer/refuse have been received
+	 * Should all the agents questioned about this task arrived, finds
+	 * the winner (if any), the losers (if any) and lets them know.
+	 */
 	protected void checkBiddedTaskComplete(Task biddedTask) {
 		int expectedOffersNo = 0;
 		for (YellowPageCapsule yCap : yellowPagedCapsules) {
@@ -517,6 +575,10 @@ public class ProcessAgent extends Agent {
 		
 	}
 
+	/**
+	 * Should all taksk that the current agent might have bidded about
+	 * arrive, returns True.
+	 */
 	private boolean checkAllCFPsDone() {
 		for (Task cfpedTask : leftOvers) {
 			Integer taskId = Integer.valueOf(cfpedTask.getTaskId());
@@ -528,6 +590,12 @@ public class ProcessAgent extends Agent {
 		return true;
 	}
 
+	/**
+	 * @throws MasException
+	 * 		- in case something goes wrong in splitting tasks
+	 *  Based on the tasks received from the {@link FacilitatorAgent}
+	 *  computes the willDo, leftOvers lists.
+	 */
 	protected void evaluateTaskList() throws MasException {
 		
 		for (Task t : toDo) {
@@ -569,6 +637,11 @@ public class ProcessAgent extends Agent {
 
 	}
 
+	/**
+	 * @param Based on pagesToCallFor it asks the {@link FacilitatorAgent} for 
+	 * more information (yello pages) about the agents it wants to get contact 
+	 * with.
+	 */
 	private void askForYellowPages(List<YellowPageCapsule> pagesToCallFor) {
 		
 		String toPrint = "AP " + ((int)myData.getId()+1) + " asks AF about: ";
@@ -587,6 +660,11 @@ public class ProcessAgent extends Agent {
 		send(yellowMsg);
 	}
 	
+	/**
+	 * An initial pre-search is being made to make sure the agent does 
+	 * not send a yellow page request to the {@link FacilitatorAgent}
+	 * for a capability it already knows the answer
+	 */
 	protected void beforeCallForProposals() {
 		List<YellowPageCapsule> pagesToCallFor = new ArrayList<>();
 		
@@ -617,6 +695,11 @@ public class ProcessAgent extends Agent {
 		}
 	}
 	
+	/**
+	 * The actual method in which a CFP is carried out to the agents 
+	 * indicated by the {@link FacilitatorAgent} when queried with 
+	 * yellow pages
+	 */
 	protected void callForProposals() {		
 
 		for (Task t : leftOvers) {

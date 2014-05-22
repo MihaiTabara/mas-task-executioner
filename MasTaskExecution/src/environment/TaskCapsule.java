@@ -4,12 +4,24 @@ import java.io.Serializable;
 
 import agents.Constants;
 
-public class TaskCapsule implements Serializable {
 /**
-	 * 
-	 */
+ * @author mtabara
+ * The structure that encapsulates a task and a potential offer 
+ * as they move between the agents
+ */
+public class TaskCapsule implements Serializable {
+
 	private static final long serialVersionUID = 1L;
+	
+	/**
+	 * The task is negotiating for
+	 */
 	private Task task;
+	
+	/**
+	 * The offer that has been made for the current task.
+	 * It defaults to INFINIT 
+	 */
 	int offer = Constants.INFINIT;
 	
 	public TaskCapsule(Task task) {

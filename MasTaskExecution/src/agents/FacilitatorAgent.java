@@ -26,22 +26,61 @@ import jade.lang.acl.UnreadableException;
 
 /**
  * @author mtabara
- *
+ * The class that describes the behaviour and the actions
+ * of the Facilitator Agent
  */
 public class FacilitatorAgent extends Agent {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
+	
+	/**
+	 * Keeps all the info about the running environment; The info
+	 * comes down from the Application right after platform and main 
+	 * container are up. Holds information about both the 
+	 * {@link AgentData} and the {@link CycleData}
+	 */
 	private MasTaskEnvironment env;
+	
+	/**
+	 * A set containing the agents that have finished the two-phase 
+	 * algorithm for the current cycle and are ready to send their
+	 * results to the {@link FacilitatorAgent}
+	 */
 	private Set<String> agentsReadyToExecute = new HashSet<>();
+	
+	/**
+	 * A set containing the agents that have finished processing 
+	 * and sending over their results to the {@link FacilitatorAgent}
+	 */
 	private Set<String> agentsWithResults = new HashSet<>();
+	
+	/**
+	 * Map used to associate tasks to a a given agent for the current cycle
+	 */
 	Map<Integer, List<Task>> taskAssigner = new HashMap<Integer, List<Task>>();
+	
+	/**
+	 * Overall global profit obtained by achieving social welfare
+	 */
 	private float overAllProfit = 0;
+	
+	/**
+	 * Local profit obtained after an iteration completes
+	 */
 	private float profitPerCycle = 0;
+	
+	/**
+	 * Holds the current cycle iteration index
+	 */
 	private int currentCycle = 0;
 
+	
+	/* (non-Javadoc)
+	 * @see jade.core.Agent#setup()
+	 */
+	/* (non-Javadoc)
+	 * @see jade.core.Agent#setup()
+	 */
 	@Override
 	protected void setup() {
 		
@@ -199,6 +238,12 @@ public class FacilitatorAgent extends Agent {
 		});
 	}
 	
+	/**
+	 * This method is the starter of all the process communication. Clears out 
+	 * the parameters for the current iteration and sends the first message to 
+	 * the agents. Within, it also shuffles the tasks to assign in the following
+	 * iterations to the agents
+	 */
 	protected void sendGreetings() {
 		System.out.println("\nCycle " + ((int)currentCycle+1) + ", phase 1:");
 		profitPerCycle = 0;
@@ -218,6 +263,11 @@ public class FacilitatorAgent extends Agent {
 	}
 	
 	
+	/**
+	 * Verify all the results from all the agents arrived. If so, compute the 
+	 * overall profit, print the final results and, if possible, start the next
+	 * iteration.
+	 */
 	protected void checkAllResultsArrived() {
 		if (agentsWithResults.size() == env.getNumberOfAgents()) {
 			overAllProfit += profitPerCycle;
@@ -229,6 +279,10 @@ public class FacilitatorAgent extends Agent {
 		}
 	}
 
+	/**
+	 * Verify that all the agents are done with phase 1 - negotiation.
+	 * If so, allow them to start phase 2 - the execution.
+	 */
 	protected void checkAllhaveDone() {
 		if (agentsReadyToExecute.size() == env.getNumberOfAgents()) {
 			System.out.println("\nCycle " + ((int)currentCycle+1) + ", phase 2:");
@@ -243,6 +297,13 @@ public class FacilitatorAgent extends Agent {
 		}
 	}
 
+	/**
+	 * @param cycleId
+	 * 		- the iteration index 
+	 * @return
+	 * 		- A mapping between the agent index and the tasks it is 
+	 * 			supposed to execute at the indicated cycleId iteration
+	 */
 	private Map<Integer, List<Task>> randomizeTasksForCycle(int cycleId) {
 		Map<Integer, List<Task>> taskAssigner = new TreeMap<>();
 		CycleData currentCycleData = env.getCycle(cycleId);

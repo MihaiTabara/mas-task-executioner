@@ -16,8 +16,19 @@ import java.util.TreeMap;
  */
 public class MasTaskEnvironment {
 
+	/**
+	 * @author mtabara
+	 * Class describing the state of a Cycle as it comes from the input
+	 */
 	public static class CycleData {
+		/**
+		 * The cycle id
+		 */
 		protected int cycleId;
+		
+		/**
+		 * The list of tasks to be executed in the current cycle
+		 */
 		protected List<Task> tasks = new ArrayList<>();
 		
 		public CycleData(int cycleId) {
@@ -44,10 +55,29 @@ public class MasTaskEnvironment {
 		}
 	}
 	
+	/**
+	 * @author mtabara
+	 * The class represeting the information about an agent
+	 */
 	public static class AgentData {
+		/**
+		 * The agent id - unique across environment
+		 */
 		protected int id;
+		
+		/**
+		 * The name of the agent
+		 */
 		protected String name;
+		
+		/**
+		 * The budget of the agent as it is being read from the input
+		 */
 		protected int budget;
+		
+		/**
+		 * The mapping of pairs (capability, cost) read from the input
+		 */
 		protected Map<Integer, Integer> caps = new TreeMap<>();
 		
 		public AgentData(int id) {
@@ -110,10 +140,30 @@ public class MasTaskEnvironment {
 		
 	}
 	
+	/**
+	 * The cycles of the system as they are being read from the input
+	 */
 	protected List<CycleData> cycles = new ArrayList<>();
+	
+	/**
+	 * All the agents in the environment as they're being read from the input
+	 */
 	protected List<AgentData> agents = new ArrayList<>();
+	
+	/**
+	 * Number of agents in the environment
+	 */
 	protected int numberOfAgents;
+	
+	/**
+	 * Number of cycles in the environment
+	 */
 	protected int numberOfCycles;
+	
+	/**
+	 * The leftover penalty to take into account when computing the overall
+	 * profit in the environment
+	 */
 	protected float LeftoverPenalty;
 	
 	public MasTaskEnvironment(InputStream input) throws IOException {

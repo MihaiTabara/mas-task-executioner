@@ -1,7 +1,18 @@
 package environment;
 
+/**
+ * @author mtabara
+ * The class to define the pair of bidder and bid
+ */
 public class BidderTuple {
+	/**
+	 * The agent that placed the bid
+	 */
 	private String agentName;
+	
+	/**
+	 * The actual bid the agent has made
+	 */
 	private int bid;
 
 	public BidderTuple(String agentName, int bid) {
