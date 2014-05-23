@@ -1,9 +1,3 @@
-% @ Copyright, 23.05.2014
-% Mihai Tabara
-% Language Used: Java (1.7)
-% Operating System: Mac OS X 10.8 Mountain Lion
-% Environment: Eclipse
-
 => The Facilitator assigns tasks to the agents as they show up in the list when
 iterating through them. That is, should we have a list of tasks L: T1, T2, T3,
 T4, and three agents: A1, A2, A3 the Facilitator splits the task as follows:
