@@ -24,16 +24,6 @@ import agents.ProcessAgent;
  * Class to initialize the system
  */
 public class Application {
-
-	/**
-	 * The place to get the tests from.
-	 */
-	protected static final String	TEST_SUITE	= "input/";	
-	
-	/**
-	 * Name for the file containing the initial state of the system
-	 */
-	protected static final String	SI			= TEST_SUITE + "system.txt";
 	
 	/**
 	 * @param args
@@ -48,6 +38,8 @@ public class Application {
 	 */
 	public static void main(String[] args) throws FileNotFoundException, IOException, StaleProxyException, InterruptedException
 	{
+		String SI = args[0];
+		
 		MasTaskEnvironment env = null;
 		try (InputStream input = new FileInputStream(SI))
 		{
